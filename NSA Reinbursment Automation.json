@@ -1,0 +1,478 @@
+{
+  "name": "NSA Reinbursment Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1gMGB0PhI3N7FY27hUdjOj7rlbRiOVuM0_VQ0DufkLE4/edit?usp=sharing",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1623684687,
+          "mode": "list",
+          "cachedResultName": "Form Responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gMGB0PhI3N7FY27hUdjOj7rlbRiOVuM0_VQ0DufkLE4/edit#gid=1623684687"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "b986fefc-1d3e-46a8-b66e-6f6507ae93f4",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "0aDHq2NZZMX3nRXd",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "YOUR_ANTHROPIC_API_KEY"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-6\",\n  \"max_tokens\": 500,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"You are reviewing an NSA club reimbursement request. Here are the details:\\n\\nName: {{ $json.Name }}\\nAmount: {{ $json.Amount }}\\nCategory: {{ $json.Category }}\\nDescription: {{ $json.Description }}\\n\\nRespond ONLY with JSON in this exact format, no other text:\\n{\\\"category_check\\\": \\\"matches or mismatch, explain briefly\\\", \\\"within_policy\\\": true or false, \\\"flag_reason\\\": \\\"reason if flagged, else empty string\\\"}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        176,
+        336
+      ],
+      "id": "c2b018db-d8c1-43dd-b7fc-3e6f029f5f42",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const responseText = $input.item.json.content[0].text;\nconst cleaned = responseText.replace(/```json\\n|```/g, '').trim();\nconst parsed = JSON.parse(cleaned);\nreturn { json: parsed };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        368,
+        336
+      ],
+      "id": "9a3dc3c5-f517-4e7b-b475-78e564b17f73",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7d3fc8e7-bf72-4da2-8c0a-f498d2e92984",
+              "leftValue": "={{ $json.within_policy }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        576,
+        336
+      ],
+      "id": "972297bf-0871-48e7-bdf2-7aa18cceb453",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1gMGB0PhI3N7FY27hUdjOj7rlbRiOVuM0_VQ0DufkLE4/edit?usp=sharing",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1623684687,
+          "mode": "list",
+          "cachedResultName": "Form Responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gMGB0PhI3N7FY27hUdjOj7rlbRiOVuM0_VQ0DufkLE4/edit#gid=1623684687"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date of Expense",
+              "displayName": "Date of Expense",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category ",
+              "displayName": "Category ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "  Receipt Upload  ",
+              "displayName": "  Receipt Upload  ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        784,
+        240
+      ],
+      "id": "74a656fa-a08a-4446-8e1e-431a04558594",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "wy7b9qQ9qPmTpphE",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "tobi.ajadi@outlook.com",
+        "subject": "Reimbursement request",
+        "emailType": "text",
+        "message": "Needs review!",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        784,
+        432
+      ],
+      "id": "638c0cf9-7c58-4876-a7a8-70660f572681",
+      "name": "Send a message",
+      "webhookId": "cf212434-c7f2-4a1a-a6ed-a815129075f6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "vYZgs4GC0n8zFiTd",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1be9Ubzu0TQSYv-91w85BrTKppal6Im9AXkpvsBK338o",
+          "mode": "list",
+          "cachedResultName": "Untitled form (Responses)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1be9Ubzu0TQSYv-91w85BrTKppal6Im9AXkpvsBK338o/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1349445765,
+          "mode": "list",
+          "cachedResultName": "Form Responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1be9Ubzu0TQSYv-91w85BrTKppal6Im9AXkpvsBK338o/edit#gid=1349445765"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        144,
+        576
+      ],
+      "id": "9fbaa6d5-d322-412a-96a8-f0f3459196fe",
+      "name": "Google Sheets Trigger1",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "0aDHq2NZZMX3nRXd",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "YOUR_ANTHROPIC_API_KEY"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-6\",\n  \"max_tokens\": 1000,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"You are helping a university club (Nigerian Students Association) draft a funding request for the University of Windsor Students' Alliance (UWSA). UWSA funds events/causes that benefit the student body. Using the rough details below, write a clear, professional funding request write-up covering: event purpose and how it benefits students, expected attendance, date/location, and an itemized cost breakdown with total. Keep it concise and formal enough to paste directly into a funding application form.\\n\\nEvent Name: {{ $json['Event Name'] }}\\nPurpose: {{ $json['Event Purpose/Description'] }}\\nExpected Attendance: {{ $json['Expected Attendance'] }}\\nDate & Location: {{ $json['Date & Location'] }}\\nCost Breakdown: {{ $json['Rough Cost Breakdown'] }}\\nOther Notes: {{ $json['Anything else UWSA should know'] }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        352,
+        576
+      ],
+      "id": "a42d163d-7567-43be-b306-e302c7c03f1f",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "sendTo": "tobi.ajadi@outlook.com",
+        "subject": "Drafted write-up",
+        "emailType": "text",
+        "message": "={{ $json.draft }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        816,
+        576
+      ],
+      "id": "eecbd15c-89f6-454c-91e1-c8e2a19243c6",
+      "name": "Send a message1",
+      "webhookId": "cf212434-c7f2-4a1a-a6ed-a815129075f6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "vYZgs4GC0n8zFiTd",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { draft: $input.item.json.content[0].text } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        576
+      ],
+      "id": "cc552b74-5ab8-4310-9c44-33eab14cc7a3",
+      "name": "Code in JavaScript1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Trigger1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "4e475abb-fedb-4580-b47c-1ed8f8c3ce59",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ec18785d6bbd4cb4b1915ba328ad60a5eb9f0a3b27bc68841dd8381ae597b083"
+  },
+  "nodeGroups": [],
+  "id": "gRQIWoC5bjIKMw1W",
+  "tags": []
+}
